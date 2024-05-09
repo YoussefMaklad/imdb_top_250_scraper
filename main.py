@@ -3,6 +3,7 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common import exceptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
@@ -58,7 +59,7 @@ def scrape_movie_data(movie_link):
 
     second_link.click()
 
-    response = requests.get(url=f'{link_for_img}', headers=HEADERS)
+    response = requests.get(url=link_for_img, headers=HEADERS)
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -77,29 +78,115 @@ def scrape_movie_data(movie_link):
     return movie_data
 
 
-chrome_options = webdriver.ChromeOptions()
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+def scrape_with_director(driver):
+    movies = []
 
-try:
+    director = driver.find_element(By.CLASS_NAME, 'ipc-metadata-list-summary-item__t')
+    director.click()
+
+    try:
+        see_all = driver.find_element(By.CLASS_NAME, 'ipc-see-more__text')
+        driver.execute_script("arguments[0].scrollIntoView(true);", see_all)
+        see_all.click()
+    except exceptions.ElementClickInterceptedException:
+        pass
+
+    div = driver.find_element(By.XPATH, '//*[@id="accordion-item-writer-previous-projects"]/div')
+    all_movies_links = div.find_elements(By.CLASS_NAME, 'ipc-metadata-list-summary-item__t')
+    all_movies_links = [link.get_attribute('href') for link in all_movies_links]
+
+    for movie_link in all_movies_links:
+        driver.get(movie_link)
+        try:
+            award_div = driver.find_element(By.CSS_SELECTOR, "div[data-testid='awards']")
+            # driver.execute_script("arguments[0].scrollIntoView(true);", award_div)
+            movie_data = scrape_movie_data(driver.current_url)
+            movies.append(movie_data)
+        except (exceptions.NoSuchElementException, exceptions.ElementClickInterceptedException):
+            pass
+
+    return movies
+
+
+choice = int(input('do you wish to just scrape the imdb top 250 only? (1) or with a director (2) or specific genres (3)'))
+
+
+if choice == 1:
+    try:
+        chrome_options = webdriver.ChromeOptions()
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
+        driver.get(URL)
+
+        movies = driver.find_elements(By.CSS_SELECTOR, "a.ipc-title-link-wrapper h3.ipc-title__text")
+        movie_links = [movie.find_element(By.XPATH, "./ancestor::a").get_attribute('href') for movie in movies][:251]
+
+        for link in movie_links:
+            driver.get(link)
+            # time.sleep(0.25)
+
+            current_movie_data = scrape_movie_data(link)
+            MOVIES_DATA.append(current_movie_data)
+            # time.sleep(0.25)
+
+            driver.back()
+
+    except Exception as e:
+        print(f'Error has occurred: {e}')
+
+    finally:
+        df = pd.DataFrame(MOVIES_DATA)
+        df.to_csv("imdb_top_250_movies_dataset.csv")
+        driver.quit()
+        
+elif choice == 2:
+    director = input('please specify the director...')
+
+    chrome_options = webdriver.ChromeOptions()
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
+    driver.get(URL)
+
+    search_field = driver.find_element(By.XPATH, '//*[@id="suggestion-search"]')
+    search_button = driver.find_element(By.XPATH, '//*[@id="suggestion-search-button"]')
+
+    search_field.send_keys(director)
+    search_button.click()
+
+    movies_for_director = scrape_with_director(driver)
+    df = pd.DataFrame(movies_for_director)
+    df.to_csv(f"imdb_top_movies_for_director_{director}_dataset.csv")
+    driver.quit()
+
+elif choice == 3:
+    genres = list(input('please specify the genres separated by a space (from drama, horror, action, thriller, '
+                        'sci-fi, comedy, short, history, biography, crime)...').split(' '))
+
+    movies_data_with_genres = []
+    chrome_options = webdriver.ChromeOptions()
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
     driver.get(URL)
 
     movies = driver.find_elements(By.CSS_SELECTOR, "a.ipc-title-link-wrapper h3.ipc-title__text")
-    movie_links = [movie.find_element(By.XPATH, "./ancestor::a").get_attribute('href') for movie in movies]
+    movie_links = [movie.find_element(By.XPATH, "./ancestor::a").get_attribute('href') for movie in movies][:251]
 
-    for link in movie_links[:251]:
+    for link in movie_links:
         driver.get(link)
         # time.sleep(0.25)
 
-        current_movie_data = scrape_movie_data(link)
-        MOVIES_DATA.append(current_movie_data)
-        # time.sleep(0.25)
+        genre_div = driver.find_element(By.CLASS_NAME, "ipc-chip-list__scroller")
+        genre_elements = genre_div.find_elements(By.CSS_SELECTOR, "a > span.ipc-chip__text")
+        genres_curr_movie = [element.text.lower() for element in genre_elements]
 
+        if all([genre in genres_curr_movie for genre in genres]):
+            current_movie_data = scrape_movie_data(link)
+            movies_data_with_genres.append(current_movie_data)
+
+        # time.sleep(0.25)
         driver.back()
 
-except Exception as e:
-    print(f'Error has occurred: {e}')
-
-finally:
-    df = pd.DataFrame(MOVIES_DATA)
-    df.to_csv("imdb_top_250_movies_dataset.csv")
+    df = pd.DataFrame(movies_data_with_genres)
+    df.to_csv("imdb_top_movies_for_specified_genres_dataset.csv")
     driver.quit()
+        
