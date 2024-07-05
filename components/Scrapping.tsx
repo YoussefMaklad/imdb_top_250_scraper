@@ -17,6 +17,7 @@ const Scrapping = () => {
     axios.post('/scrape-imdb', { choice, director, genres })
       .then(response => {
         setScrapedData(response.data);
+        console.log(response.data);
       })
       .catch(error => {
         console.error(error);
@@ -24,19 +25,34 @@ const Scrapping = () => {
   }
 
   const handleGenreSelect = (genre: string) => {
-    setGenres(prevGenres => [...prevGenres, genre]);
+    console.log(genres);
+    if(!genres.includes(genre)){
+        setGenres(prevGenres => [...prevGenres, genre]);
+        console.log(genres);
+    }
   };
+
+//   const handleGenreSelect = (genre: string) => {
+//     console.log("before:", genres);
+//     if (!genres.includes(genre)) {
+//         setGenres(prevGenres => {
+//             const updatedGenres = [...prevGenres, genre];
+//             console.log("updated:", updatedGenres); // Log genres after updating state
+//             return updatedGenres;
+//         });
+//     }
+//     console.log("after:", genres);
+// };
 
   return (
     <div className="scrapping-container">
       <div>
-
-      {/* <Lottie animationData={animationData} className='lottie'/> */}
       <h1 className="H1-scrap">Scrapping Page</h1>
       <h3 className="h3-scrap">Choose your options:</h3>
       </div>
       <div className="options-container">
         <Button className="custom-button" onClick={() => scrapeIMDB(1)}>Top 250 Movies</Button>
+        <Button className="custom-button" onClick={() => scrapeIMDB(2)}>Scrape By Director</Button>
         <Form.Control 
           type="text" 
           placeholder="Director" 
@@ -51,7 +67,7 @@ const Scrapping = () => {
               </Dropdown.Item>
             ))}
           </DropdownButton>
-          <Button className="custom-genre" onClick={() => scrapeIMDB(3)}>Scrape by Genres</Button>
+          <Button className="custom-button" onClick={() => scrapeIMDB(3)}>Scrape By Genres</Button>
         </div>
       </div>
       <div className="scrapped-data-container">

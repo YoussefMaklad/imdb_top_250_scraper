@@ -12,30 +12,29 @@ from selenium.webdriver.support import expected_conditions as EC
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+# CORS(app)
+CORS(app, resources={r"/scrape-imdb": {"origins": "http://localhost:5173"}})
 
+
+URL = "https://m.imdb.com/chart/top/"
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                   'Chrome/71.0.3578.98 Safari/537.36'
 }
 
-URL = "https://m.imdb.com/chart/top/"
 
 def scrape_movie_data(movie_link):
     response = requests.get(url=movie_link, headers=HEADERS)
-    response.raise_for_status()
-
     soup = BeautifulSoup(response.text, 'html.parser')
 
     title = soup.find('span', class_='hero__primary-text', attrs={'data-testid': 'hero__primary-text'}).text
-    rating = soup.find('span', class_='sc-bde20123-1 cMEQkK').text
+    rating = soup.find('span', class_='sc-eb51e184-1 cxhhrI').text
 
     genre_div = soup.find('div', {'class': 'ipc-chip-list__scroller'})
     genres = [chip.find('span', {'class': 'ipc-chip__text'}).get_text() for chip in genre_div.find_all('a')]
 
-    year_div = soup.find('div', class_="sc-b7c53eda-0 dUpRPQ")
-    year_link = year_div.find('a', class_="ipc-link ipc-link--baseAlt ipc-link--inherit-color")
-    year = year_link.text
+    year_div = soup.find('div', class_="sc-1f50b7c-0 PUxFE")
+    year = year_div.find('a', class_="ipc-link ipc-link--baseAlt ipc-link--inherit-color").text
 
     try:
         directors_ul = soup.select_one('span:contains("Directors") + div ul').find_all('li')
@@ -54,7 +53,7 @@ def scrape_movie_data(movie_link):
         "release_year": year,
         "director(s)": directors,
         "cast": cast,
-        "image": ""  # Empty for now, you can add logic to scrape image
+        "image": ""  # Empty for now
     }
 
     return movie_data
@@ -76,7 +75,7 @@ def scrape_with_director(driver):
     all_movies_links = div.find_elements(By.CLASS_NAME, 'ipc-metadata-list-summary-item__t')
     all_movies_links = [link.get_attribute('href') for link in all_movies_links]
 
-    for movie_link in all_movies_links:
+    for movie_link in all_movies_links[:3]:
         driver.get(movie_link)
         try:
             award_div = driver.find_element(By.CSS_SELECTOR, "div[data-testid='awards']")
@@ -92,12 +91,11 @@ def scrape_imdb(choice, director=None, genres=None):
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
     driver.get(URL)
-
     result = []
 
     if choice == 1:
         movies = driver.find_elements(By.CSS_SELECTOR, "a.ipc-title-link-wrapper h3.ipc-title__text")
-        movie_links = [movie.find_element(By.XPATH, "./ancestor::a").get_attribute('href') for movie in movies][:2]
+        movie_links = [movie.find_element(By.XPATH, "./ancestor::a").get_attribute('href') for movie in movies][:5]
 
         for link in movie_links:
             driver.get(link)
@@ -106,7 +104,6 @@ def scrape_imdb(choice, director=None, genres=None):
             driver.back()
 
     elif choice == 2:
-        driver.get(URL)
         search_field = driver.find_element(By.XPATH, '//*[@id="suggestion-search"]')
         search_button = driver.find_element(By.XPATH, '//*[@id="suggestion-search-button"]')
 
@@ -116,18 +113,14 @@ def scrape_imdb(choice, director=None, genres=None):
         result = scrape_with_director(driver)
 
     elif choice == 3:
+        ct = 0
         movies_data_with_genres = []
-        chrome_options = webdriver.ChromeOptions()
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-
-        driver.get(URL)
 
         movies = driver.find_elements(By.CSS_SELECTOR, "a.ipc-title-link-wrapper h3.ipc-title__text")
-        movie_links = [movie.find_element(By.XPATH, "./ancestor::a").get_attribute('href') for movie in movies][:2]
+        movie_links = [movie.find_element(By.XPATH, "./ancestor::a").get_attribute('href') for movie in movies]
 
         for link in movie_links:
             driver.get(link)
-            # time.sleep(0.25)
 
             genre_div = driver.find_element(By.CLASS_NAME, "ipc-chip-list__scroller")
             genre_elements = genre_div.find_elements(By.CSS_SELECTOR, "a > span.ipc-chip__text")
@@ -136,8 +129,12 @@ def scrape_imdb(choice, director=None, genres=None):
             if all([genre in genres_curr_movie for genre in genres]):
                 current_movie_data = scrape_movie_data(link)
                 movies_data_with_genres.append(current_movie_data)
+                result.append(current_movie_data)
+                ct += 1
 
-            # time.sleep(0.25)
+            if ct == 3:
+                break
+
             driver.back()
 
         df = pd.DataFrame(movies_data_with_genres)
@@ -151,9 +148,8 @@ def scrape_imdb_endpoint():
     data = request.json
     choice = data.get('choice')
     director = data.get('director')
-    # genres = data.get('genres')
-    genres = request.args.get('Genre')
-    print(genres)
+    genres = data.get('genres')
+
     if choice == 1:
         result = scrape_imdb(choice)
     elif choice == 2:

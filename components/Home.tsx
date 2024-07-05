@@ -21,7 +21,6 @@ const Home = () => {
       <div className='containor-home'>
         <div className='card-home'>
           <div className='content-home'>
-            {/* <img src={bg} alt="Background" className='image-home' /> */}
             <Lottie animationData={animationData} className='image-home'/>
             <img src={imdb} className='imdb-home' />
             <img src={logo} className='PB_logo' />
