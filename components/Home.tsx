@@ -15,6 +15,10 @@ const Home = () => {
     navigate('/scrapping');
   };
 
+  const handlePredictionClick = () => {
+    navigate('/prediction');
+  };
+
   return (
     <div>
       <div className='split-background'></div>
@@ -26,11 +30,16 @@ const Home = () => {
             <img src={logo} className='PB_logo' />
             <h2 className='content'>
               <p>We specialize in scrapping recommendation movie systems.</p>
-              <p>Ensuring our clients receive tailored and accurate suggestions based on their preferences.</p>
+              <p>You can also predict the rating of a movie using our model!</p>
             </h2>
             <div className='watch-home' onClick={handleButtonClick}>
               <img src={play} className='button-home' alt="Play button" />
               <span className="text">Let's Go</span>
+            </div>
+            <br />
+            <div className='watch-home' onClick={handlePredictionClick}>
+              <img src={play} className='button-home' alt="Play button" />
+              <span className="text">Predict Rating</span>
             </div>
           </div>
         </div>

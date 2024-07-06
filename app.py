@@ -10,10 +10,14 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from flask_cors import CORS
+from mappings import *
+import pickle
+
 
 app = Flask(__name__)
 # CORS(app)
 CORS(app, resources={r"/scrape-imdb": {"origins": "http://localhost:5173"}})
+CORS(app, resources={r"/predict": {"origins": "http://localhost:5173"}})
 
 
 URL = "https://m.imdb.com/chart/top/"
@@ -158,6 +162,26 @@ def scrape_imdb_endpoint():
         result = scrape_imdb(choice, genres=genres)
 
     return jsonify(result)
+
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.json
+    
+    # Load the model
+    with open('model.pkl', 'rb') as file:
+        model = pickle.load(file)
+
+    year = data['year']
+    director_index = director_mapping[data['director']]
+    genre_features = [1 if genre in data['genre'] else 0 for genre in genres]
+
+    features = [year, director_index] + genre_features
+
+    prediction = model.predict([features])[0]
+    
+    return jsonify(prediction)
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
