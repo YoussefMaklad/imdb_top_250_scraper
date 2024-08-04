@@ -11,13 +11,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from flask_cors import CORS
 from mappings import *
+import numpy as np
 import pickle
+import json
 
+# CORS(app)
 
 app = Flask(__name__)
-# CORS(app)
 CORS(app, resources={r"/scrape-imdb": {"origins": "http://localhost:5173"}})
-CORS(app, resources={r"/predict": {"origins": "http://localhost:5173"}})
+CORS(app, resources={r"/predict":     {"origins": "http://localhost:5173"}})
 
 
 URL = "https://m.imdb.com/chart/top/"
@@ -31,24 +33,24 @@ def scrape_movie_data(movie_link):
     response = requests.get(url=movie_link, headers=HEADERS)
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    title = soup.find('span', class_='hero__primary-text', attrs={'data-testid': 'hero__primary-text'}).text
+    title  = soup.find('span', class_='hero__primary-text', attrs={'data-testid': 'hero__primary-text'}).text
     rating = soup.find('span', class_='sc-eb51e184-1 cxhhrI').text
 
     genre_div = soup.find('div', {'class': 'ipc-chip-list__scroller'})
-    genres = [chip.find('span', {'class': 'ipc-chip__text'}).get_text() for chip in genre_div.find_all('a')]
+    genres    = [chip.find('span', {'class': 'ipc-chip__text'}).get_text() for chip in genre_div.find_all('a')]
 
     year_div = soup.find('div', class_="sc-1f50b7c-0 PUxFE")
-    year = year_div.find('a', class_="ipc-link ipc-link--baseAlt ipc-link--inherit-color").text
+    year     = year_div.find('a', class_="ipc-link ipc-link--baseAlt ipc-link--inherit-color").text
 
     try:
         directors_ul = soup.select_one('span:contains("Directors") + div ul').find_all('li')
-        directors = [director.text for director in directors_ul]
+        directors    = [director.text for director in directors_ul]
     except:
-        directors = [soup.find('a', class_="ipc-metadata-list-item__list-content-item "
+        directors    = [soup.find('a', class_="ipc-metadata-list-item__list-content-item "
                                            "ipc-metadata-list-item__list-content-item--link").text]
 
     cast_links = soup.find_all('a', {'data-testid': 'title-cast-item__actor'})
-    cast = [actor.get_text() for actor in cast_links]
+    cast       = [actor.get_text() for actor in cast_links]
 
     movie_data = {
         "title": title,
@@ -149,10 +151,10 @@ def scrape_imdb(choice, director=None, genres=None):
 
 @app.route('/scrape-imdb', methods=['POST'])
 def scrape_imdb_endpoint():
-    data = request.json
-    choice = data.get('choice')
+    data     = request.json
+    choice   = data.get('choice')
     director = data.get('director')
-    genres = data.get('genres')
+    genres   = data.get('genres')
 
     if choice == 1:
         result = scrape_imdb(choice)
@@ -172,16 +174,28 @@ def predict():
     with open('model.pkl', 'rb') as file:
         model = pickle.load(file)
 
+    with open('director_mapping.json', 'r') as f:
+        director_mapping = json.load(f)
+
+    with open('cast_mapping.json', 'r') as f:
+        actor_mapping    = json.load(f)    
+
     year = data['year']
-    director_index = director_mapping[data['director']]
-    genre_features = [1 if genre in data['genre'] else 0 for genre in genres]
 
-    features = [year, director_index] + genre_features
+    director_indices  = [director_mapping[director] for director in data['directorsInput']]
+    director_features = [1 if i in director_indices else 0 for i in range(len(director_mapping))]
+    
+    genre_features = [1 if genre in data['genresInput'] else 0 for genre in genres]
 
-    prediction = model.predict([features])[0]
+    actor_indices  = [actor_mapping[actor] for actor in data['actorsInput']]
+    actor_features = [1 if i in actor_indices else 0 for i in range(len(actor_mapping))]
+    
+    features = [year] + director_features + genre_features + actor_features
+    features = np.array(features).reshape(1, -1)
+    
+    prediction = model.predict(features)[0]
     
     return jsonify(prediction)
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

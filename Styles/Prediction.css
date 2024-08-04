@@ -1,55 +1,78 @@
 .prediction-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-left: 600px;
-    color: aliceblue;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 600px;
+  color: aliceblue;
+}
+
+.dataset-samples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.sample {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 10px;
+  background-color: white;
+}
+
+.user-inputs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.user-inputs input {
+  margin: 5px 0;
+  padding: 10px;
+  width: 200px;
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+.prediction-result {
+  margin-top: 20px;
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.custom-dropdown {
+  margin: 5px;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 15px;
+  justify-content: center;
+}
+
+@media screen and (max-width: 768px) {
+  .custom-input, .custom-dropdown, .custom-button, .custom-genre {
+      width: 100%;
   }
-  
-  .dataset-samples {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 20px;
-  }
-  
-  .sample {
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    padding: 10px;
-    margin: 10px;
-    background-color: white;
-  }
-  
-  .user-inputs {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .user-inputs input {
-    margin: 5px 0;
-    padding: 10px;
-    width: 200px;
-  }
-  
-  button {
-    padding: 10px 20px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  button:hover {
-    background-color: #45a049;
-  }
-  
-  .prediction-result {
-    margin-top: 20px;
-    font-size: 1.2em;
-    font-weight: bold;
-  }
-  
+}
+
+.dropdown-menu {
+  max-height: 200px; 
+  overflow-y: auto; 
+  z-index: 1000;
+}

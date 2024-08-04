@@ -1,3 +1,5 @@
+import cast from '../cast_mapping.json' assert { type: 'json' };
+
 // Define the array of directors
 const directors = [
     'Aamir Khan', 'Adam Elliot', 'Akira Kurosawa', 'Alejandro G. Iñárritu', 'Alfred Hitchcock',
@@ -32,11 +34,12 @@ const directors = [
     'Victor Fleming', 'Vidhu Vinod Chopra', 'Vittorio De Sica', 'Wes Anderson', 'William Friedkin',
     'William Wyler', 'Wim Wenders', 'Wolfgang Petersen', 'Yasujirô Ozu', 'Çagan Irmak'
   ];
-  
-  // Define the array of genres
+    
+
+// Define the array of genres
 const genres = [
     'Action', 'Comedy', 'Drama', 'Romance', 'Sci-Fi', 'Thriller', 'Mystery', 'Adventure',
     'Music', 'War', 'History', 'Crime', 'Animation'
 ];
 
-export { directors, genres };
+export { directors, genres, cast };

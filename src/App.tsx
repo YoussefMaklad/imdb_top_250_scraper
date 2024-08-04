@@ -1,5 +1,4 @@
 import React from 'react';
-// import './App.css';
 import '../Styles/Home.css';
 import Home from '../components/Home';
 import Scrapping from '../components/Scrapping';
@@ -10,16 +9,14 @@ import {
   Route
 } from 'react-router-dom';
 
-function App() {
+export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/scrapping" element={<Scrapping />} />
+        <Route path="/"           element={<Home />} />
+        <Route path="/scrapping"  element={<Scrapping />} />
         <Route path="/prediction" element={<Prediction />} />
       </Routes>
     </Router>
   );
 }
-
-export default App;

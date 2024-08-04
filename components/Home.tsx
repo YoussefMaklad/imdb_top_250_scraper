@@ -11,7 +11,7 @@ import animationData from '../assets/Animation - 1716149182006.json'
 const Home = () => {
   const navigate = useNavigate();
 
-  const handleButtonClick = () => {
+  const handleScrappingClick = () => {
     navigate('/scrapping');
   };
 
@@ -32,7 +32,7 @@ const Home = () => {
               <p>We specialize in scrapping recommendation movie systems.</p>
               <p>You can also predict the rating of a movie using our model!</p>
             </h2>
-            <div className='watch-home' onClick={handleButtonClick}>
+            <div className='watch-home' onClick={handleScrappingClick}>
               <img src={play} className='button-home' alt="Play button" />
               <span className="text">Let's Go</span>
             </div>
